@@ -2,10 +2,12 @@ package match
 
 import (
 	"time"
-	"github.com/transcovo/go-chpr-logger"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"sort"
+	"github.com/transcovo/go-chpr-logger"
+	"github.com/sirupsen/logrus"
+	"math/rand"
+	"strings"
 )
 
 type Solution struct {
@@ -20,13 +22,32 @@ func Solve(problem *Problem) *Solution {
 	printSquads(squads)
 	printRanges(ranges)
 
+	bestSessions, _ := getSolver(problem, sessions)([]*ReviewSession{}, "")
 	solution := &Solution{
-		Sessions: getBestSolution(problem, sessions, []*ReviewSession{}, ""),
+		Sessions: bestSessions,
 	}
+
+	coverage, maxCoverage := getCoverage(problem.WorkRanges, bestSessions)
+
+	missingCoverage := getMissingConverage(coverage, problem.TargetCoverage)
+
+	worstMissingCoverage, _ := getCoveragePerformance([]*ReviewSession{}, problem.WorkRanges, problem.TargetCoverage)
+
+	println(missingCoverageToString(missingCoverage))
+	println(missingCoverageToString(worstMissingCoverage))
+
+	println(maxCoverage)
 
 	sort.Sort(ByStart(solution.Sessions))
 
 	printSessions(solution.Sessions)
+
+	for exclusivity, exclusivityCoverage := range coverage {
+		println(exclusivity.String() + ":")
+		for i, value := range exclusivityCoverage {
+			println("  " + strconv.Itoa(i) + " -> " + strconv.Itoa(value))
+		}
+	}
 
 	return solution
 }
@@ -35,57 +56,94 @@ func printSessions(sessions []*ReviewSession) {
 	print(len(sessions), " session(s):")
 	println()
 	for _, session := range sessions {
-		println(session.Reviewers.People[0].Email + "\t" +
-			session.Reviewers.People[1].Email + "\t" +
-			session.Range.Start.Format(time.Stamp) + "\t" +
-			session.Range.End.Format(time.Stamp) + "\t")
+		printSession(session)
 	}
 }
+func printSession(session *ReviewSession) {
+	println(session.Reviewers.People[0].Email + "\t" +
+		session.Reviewers.People[1].Email + "\t" +
+		session.Range.Start.Format(time.Stamp) + "\t" +
+		session.Range.End.Format(time.Stamp) + "\t")
+}
 
-func getBestSolution(problem *Problem, allSessions []*ReviewSession, currentSessions []*ReviewSession, path string) []*ReviewSession {
+type solver func([]*ReviewSession, string) ([]*ReviewSession, map[Exclusivity]int)
+
+func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
+	var solve solver
+
 	workRanges := problem.WorkRanges
 	targetCoverage := problem.TargetCoverage
 
-	bestMissingCoverage := getMissingCoverage(currentSessions, workRanges, targetCoverage)
-	bestSolutionSessions := currentSessions
-	bestPath := ""
+	bestSessions := []*ReviewSession{}
+	bestCoveragePerformance, _ := getCoveragePerformance(bestSessions, workRanges, targetCoverage)
 
-	for i, session := range allSessions {
-		subpath := path + "/" + strconv.Itoa(i)
+	var iterations int64 = 0
 
-		sessionCompatible := isSessionCompatible(session, currentSessions)
-		l := logger.WithField("path", subpath)
+	solve = func(currentSessions []*ReviewSession, path string) ([]*ReviewSession, map[Exclusivity]int) {
+		currentCoveragePerformance, _ := getCoveragePerformance(currentSessions, workRanges, targetCoverage)
 
-		if sessionCompatible {
+		//for i, session := range allSessions {
+		maxIter := 5000 / (len(currentSessions) + 1)
+		for k := 0; k < maxIter; k++ {
+			if iterations > 10e7 {
+				break
+			}
+
+			i := rand.Intn(len(allSessions))
+			session := allSessions[i]
+			iterations += 1
+
+			subPath := path + "/" + strconv.Itoa(i)
+			if iterations%10e4 == 0 {
+				logger.WithFields(logrus.Fields{
+					"iterations": iterations / 1000,
+					"best":       missingCoverageToString(bestCoveragePerformance),
+					"current":    missingCoverageToString(currentCoveragePerformance),
+				}).Info("Coverage comparision")
+			}
+
+			sessionCompatible := isSessionCompatible(session, currentSessions)
+			if !sessionCompatible {
+				continue
+			}
 
 			newSessions := append(currentSessions, session)
-			newMissingCoverage := getMissingCoverage(newSessions, workRanges, targetCoverage)
-
-			if isEnough(newMissingCoverage) {
-				l.Info("Missing coverage ok returning solution")
-				return newSessions
+			newCoveragePerformance, newMaxCoverage := getCoveragePerformance(newSessions, workRanges, targetCoverage)
+			if newMaxCoverage > problem.MaxTotalCoverage {
+				continue
 			}
 
-			coverageImproved := isMissingCoverageBetter2(newMissingCoverage, bestMissingCoverage)
-			l.WithFields(logrus.Fields{
-				"coverageImproved": coverageImproved,
-				"best":             missingCoverageToString(bestMissingCoverage),
-				"new":              missingCoverageToString(newMissingCoverage),
-			}).Info("Coverage comparision")
-
-			if coverageImproved {
-				bestMissingCoverage = newMissingCoverage
-				bestSolutionSessions = newSessions
-				bestPath = subpath
+			improvesCoverage := isMissingCoverageBetter(newCoveragePerformance, currentCoveragePerformance)
+			if !improvesCoverage {
+				continue
 			}
+
+			currentCoveragePerformance = newCoveragePerformance
+
+			if isMissingCoverageBetter(newCoveragePerformance, bestCoveragePerformance) {
+				bestSessions = make([]*ReviewSession, len(newSessions))
+				copy(bestSessions, newSessions)
+				bestCoveragePerformance = newCoveragePerformance
+			}
+
+			if isEnough(currentCoveragePerformance) {
+				break
+			}
+
+			solve(newSessions, subPath)
 		}
-	}
 
-	if bestPath != "" {
-		return getBestSolution(problem, allSessions, bestSolutionSessions, bestPath)
-	}
+		__debug_perf, _ := getCoveragePerformance(bestSessions, workRanges, targetCoverage)
+		if missingCoverageToString(__debug_perf) != missingCoverageToString(bestCoveragePerformance) {
+			printSessions(bestSessions)
+			println(missingCoverageToString(__debug_perf))
+			println(missingCoverageToString(bestCoveragePerformance))
+			panic("here")
+		}
 
-	return bestSolutionSessions
+		return bestSessions, bestCoveragePerformance
+	}
+	return solve;
 }
 
 func missingCoverageToString(missingCoverage map[Exclusivity]int) string {
@@ -117,34 +175,43 @@ func isEnough(missingCoverage map[Exclusivity]int) bool {
 }
 
 func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool {
-	personSessionCount := map[string]int{}
+	// store the number of sessions to cap it
+	reviewers := session.Reviewers
+	people := reviewers.People
+
+	person0 := people[0]
+	person0.isSessionCompatibleSessionCount = 0
+	person1 := people[1]
+	person1.isSessionCompatibleSessionCount = 0
 
 	for _, otherSession := range sessions {
+		// not the same session two times
 		if session == otherSession {
 			return false
 		}
-		if session.Reviewers == otherSession.Reviewers {
+
+		otherReviewers := otherSession.Reviewers
+		// not the same squad
+		if reviewers == otherReviewers {
 			return false
 		}
-		if haveIntersection(session.Range, otherSession.Range) {
+
+		otherPeople := otherReviewers.People
+
+		otherPerson0 := otherPeople[0]
+		otherPerson1 := otherPeople[1]
+		if (otherPerson0 == person0 || otherPerson0 == person1 || otherPerson1 == person0 || otherPerson1 == person1) &&
+			haveIntersection(session.Range, otherSession.Range) {
+
 			return false
 		}
-		for _, person := range otherSession.Reviewers.People {
-			if _, ok := personSessionCount[person.Email]; !ok {
-				personSessionCount[person.Email] = 0
-			}
-			personSessionCount[person.Email]++
-		}
-	}
-	for _, person := range session.Reviewers.People {
-		if count, ok := personSessionCount[person.Email]; ok {
-			if count >= 3 {
-				return false
-			}
-		}
+		// every reviewer must be able to attempt all the sessions
+		otherPerson0.isSessionCompatibleSessionCount += 1
+		otherPerson1.isSessionCompatibleSessionCount += 1
 	}
 
-	return true
+	// max 4 reviews per person
+	return person0.isSessionCompatibleSessionCount < 4 && person1.isSessionCompatibleSessionCount < 4
 }
 
 func printRanges(ranges []*Range) {
@@ -165,6 +232,23 @@ type Squad struct {
 	BusyRanges []*Range
 }
 
+func (squad *Squad) GetDisplayName() string {
+	result := ""
+	for _, person := range squad.People {
+		if result != "" {
+			result = result + " / "
+		}
+		result = result + getNameFromEmail(person.Email)
+	}
+	return result
+}
+
+func getNameFromEmail(email string) string {
+	beforeA := strings.Split(email, "@")[0]
+	firstName := strings.Split(beforeA, ".")[0]
+	return strings.Title(firstName)
+}
+
 func (squad *Squad) GetExclusivity() Exclusivity {
 	for _, person := range squad.People {
 		exclusivity := person.GetExclusivity()
@@ -182,13 +266,36 @@ type Score struct {
 
 var coveragePeriodSpan = 30 * time.Minute
 
-func getMissingCoverage(sessions []*ReviewSession, workRanges []*Range, target map[Exclusivity]int) map[Exclusivity]int {
+func getCoveragePerformance(sessions []*ReviewSession, workRanges []*Range, target map[Exclusivity]int) (map[Exclusivity]int, int) {
+	coverage, maxCoverage := getCoverage(workRanges, sessions)
+
+	missingCoverage := getMissingConverage(coverage, target)
+
+	return missingCoverage, maxCoverage
+}
+func getMissingConverage(coverage map[Exclusivity]map[int]int, target map[Exclusivity]int) map[Exclusivity]int {
+	missingCoverage := map[Exclusivity]int{
+		ExclusivityMobile: 0,
+		ExclusivityBack:   0,
+		ExclusivityNone:   0,
+	}
+	for exclusivity, exclusivityCoverage := range coverage {
+		targetValue := target[exclusivity]
+		for _, value := range exclusivityCoverage {
+			if value < targetValue {
+				missingCoverage[exclusivity] += targetValue - value
+			}
+		}
+	}
+	return missingCoverage
+}
+
+func getCoverage(workRanges []*Range, sessions []*ReviewSession) (map[Exclusivity]map[int]int, int) {
 	coverage := map[Exclusivity]map[int]int{
 		ExclusivityMobile: {},
 		ExclusivityBack:   {},
 		ExclusivityNone:   {},
 	}
-
 	for _, workRange := range workRanges {
 		date := workRange.Start
 		for date.Before(workRange.End) {
@@ -199,7 +306,7 @@ func getMissingCoverage(sessions []*ReviewSession, workRanges []*Range, target m
 			date = date.Add(coveragePeriodSpan)
 		}
 	}
-
+	maxCoverage := 0
 	for _, session := range sessions {
 		date := session.Start()
 		for date.Before(session.End()) {
@@ -214,26 +321,13 @@ func getMissingCoverage(sessions []*ReviewSession, workRanges []*Range, target m
 				coverage[ExclusivityBack][coveragePeriodId] += 1
 			}
 			coverage[ExclusivityNone][coveragePeriodId] += 1
+			if coverage[ExclusivityNone][coveragePeriodId] > maxCoverage {
+				maxCoverage = coverage[ExclusivityNone][coveragePeriodId]
+			}
 			date = date.Add(coveragePeriodSpan)
 		}
 	}
-
-	missingCoverage := map[Exclusivity]int{
-		ExclusivityMobile: 0,
-		ExclusivityBack:   0,
-		ExclusivityNone:   0,
-	}
-
-	for exclusivity, exclusivityCoverage := range coverage {
-		targetValue := target[exclusivity]
-		for _, value := range exclusivityCoverage {
-			if value < targetValue {
-				missingCoverage[exclusivity] += (targetValue - value)
-			}
-		}
-	}
-
-	return missingCoverage
+	return coverage, maxCoverage
 }
 
 func getCoveragePeriodId(workRanges []*Range, date time.Time) int {

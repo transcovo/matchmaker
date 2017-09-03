@@ -14,6 +14,7 @@ import (
 	"io/ioutil"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
+	"time"
 )
 
 func GetGoogleCalendarService() (*calendar.Service, error) {
@@ -37,6 +38,10 @@ func GetGoogleCalendarService() (*calendar.Service, error) {
 	}
 
 	return srv, nil
+}
+
+func FormatTime(date time.Time) string {
+	return date.Format(time.RFC3339)
 }
 
 // getClient uses a Context and Config to retrieve a Token

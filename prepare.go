@@ -65,10 +65,6 @@ func GetWeekWorkRanges(beginOfWeek time.Time) chan *match.Range {
 	return ranges
 }
 
-func formatTime(date time.Time) string {
-	return date.Format(time.RFC3339)
-}
-
 func parseTime(dateStr string) time.Time {
 	result, err := time.Parse(time.RFC3339, dateStr)
 	util.PanicOnError(err, "Impossible to parse date "+dateStr)

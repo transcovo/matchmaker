@@ -28,14 +28,14 @@ func (exclusivity Exclusivity) String() string {
 }
 
 const (
-	ExclusivityNone Exclusivity = iota
+	ExclusivityNone   Exclusivity = iota
 	ExclusivityMobile
 	ExclusivityBack
 )
 
 type Languages struct {
-	Js    Level
-	Go  Level
+	Js      Level
+	Go      Level
 	Python  Level
 	Ios     Level
 	Android Level
@@ -52,9 +52,10 @@ func (languages *Languages) GetExclusivity() Exclusivity {
 }
 
 type Person struct {
-	Email          string `yaml:"email"`
-	Languages      Languages
-	IsGoodReviewer bool
+	Email                           string `yaml:"email"`
+	Languages                       Languages
+	IsGoodReviewer                  bool
+	isSessionCompatibleSessionCount int `yaml:"-"`
 }
 
 func (person *Person) GetExclusivity() Exclusivity {
@@ -79,10 +80,11 @@ type BusyTime struct {
 }
 
 type Problem struct {
-	People         []*Person
-	WorkRanges     []*Range
-	BusyTimes      []*BusyTime
-	TargetCoverage map[Exclusivity]int
+	People           []*Person
+	WorkRanges       []*Range
+	BusyTimes        []*BusyTime
+	TargetCoverage   map[Exclusivity]int
+	MaxTotalCoverage int
 }
 
 type SerializedBusyTime struct {
@@ -140,9 +142,10 @@ func LoadProblem(yml []byte) (*Problem, error) {
 	}
 
 	return &Problem{
-		People:         serializedProblem.People,
-		WorkRanges:     serializedProblem.WorkRanges,
-		BusyTimes:      busyTimes,
-		TargetCoverage: serializedProblem.TargetCoverage,
+		People:           serializedProblem.People,
+		WorkRanges:       serializedProblem.WorkRanges,
+		BusyTimes:        busyTimes,
+		TargetCoverage:   serializedProblem.TargetCoverage,
+		MaxTotalCoverage: 8,
 	}, nil
 }

@@ -82,7 +82,7 @@ type Problem struct {
 	People         []*Person
 	WorkRanges     []*Range
 	BusyTimes      []*BusyTime
-	TargetCoverage map[string]float32
+	TargetCoverage map[Exclusivity]int
 }
 
 type SerializedBusyTime struct {
@@ -94,7 +94,7 @@ type SerializedProblem struct {
 	People         []*Person
 	WorkRanges     []*Range
 	BusyTimes      []*SerializedBusyTime
-	TargetCoverage map[string]float32
+	TargetCoverage map[Exclusivity]int
 }
 
 func (problem *Problem) ToYaml() ([]byte, error) {

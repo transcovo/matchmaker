@@ -132,7 +132,11 @@ func loadProblem() *match.Problem {
 		People:         people,
 		WorkRanges:     workRanges,
 		BusyTimes:      busyTimes,
-		TargetCoverage: map[string]float32{},
+		TargetCoverage: map[match.Exclusivity]int{
+			match.ExclusivityMobile: 1,
+			match.ExclusivityBack: 2,
+			match.ExclusivityNone: 3,
+		},
 	}
 }
 

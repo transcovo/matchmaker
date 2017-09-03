@@ -14,10 +14,52 @@ const (
 	LanguageLevelMaster
 )
 
+type Exclusivity int
+
+func (exclusivity Exclusivity) String() string {
+	switch exclusivity {
+	case ExclusivityNone:
+		return "none"
+	case ExclusivityBack:
+		return "back"
+	case ExclusivityMobile:
+		return "mobile"
+	}
+	panic("Unexpected exclusivity " + string(exclusivity))
+}
+
+const (
+	ExclusivityNone Exclusivity = iota
+	ExclusivityMobile
+	ExclusivityBack
+)
+
+type Languages struct {
+	Js    Level
+	Go  Level
+	Python  Level
+	Ios     Level
+	Android Level
+}
+
+func (languages *Languages) GetExclusivity() Exclusivity {
+	if languages.Js == LanguageLevelNone && languages.Go == LanguageLevelNone && languages.Python == LanguageLevelNone {
+		return ExclusivityMobile
+	}
+	if languages.Ios == LanguageLevelNone && languages.Android == LanguageLevelNone {
+		return ExclusivityBack
+	}
+	return ExclusivityNone
+}
+
 type Person struct {
 	Email          string `yaml:"email"`
-	Languages      map[string]Level
+	Languages      Languages
 	IsGoodReviewer bool
+}
+
+func (person *Person) GetExclusivity() Exclusivity {
+	return person.Languages.GetExclusivity()
 }
 
 func LoadPersons(path string) ([]*Person, error) {
@@ -91,15 +133,15 @@ func LoadProblem(yml []byte) (*Problem, error) {
 	}
 
 	personsByEmail := map[string]*Person{}
-	for _,person := range serializedProblem.People {
+	for _, person := range serializedProblem.People {
 		personsByEmail[person.Email] = person
 	}
 
 	busyTimes := make([]*BusyTime, len(serializedProblem.BusyTimes))
 	for i, serializedBusyTime := range serializedProblem.BusyTimes {
 		busyTimes[i] = &BusyTime{
-			Person:personsByEmail[serializedBusyTime.Email],
-			Range: serializedBusyTime.Range,
+			Person: personsByEmail[serializedBusyTime.Email],
+			Range:  serializedBusyTime.Range,
 		}
 	}
 

@@ -10,6 +10,14 @@ type Range struct {
 	Start time.Time
 	End   time.Time
 }
+
+func (r *Range) Pad(padding time.Duration) *Range {
+	return &Range{
+		Start:r.Start.Add(-padding),
+		End:r.End.Add(padding),
+	}
+}
+
 func (r *Range) Minutes() float64 {
 	return r.End.Sub(r.Start).Minutes()
 }

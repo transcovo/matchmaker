@@ -200,10 +200,12 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 
 		otherPerson0 := otherPeople[0]
 		otherPerson1 := otherPeople[1]
-		if (otherPerson0 == person0 || otherPerson0 == person1 || otherPerson1 == person0 || otherPerson1 == person1) &&
-			haveIntersection(session.Range, otherSession.Range) {
-
-			return false
+		if otherPerson0 == person0 || otherPerson0 == person1 || otherPerson1 == person0 || otherPerson1 == person1 {
+			range1 := session.Range.Pad(time.Hour * 3)
+			range2 := otherSession.Range
+			if haveIntersection(range1, range2) {
+				return false
+			}
 		}
 		// every reviewer must be able to attempt all the sessions
 		otherPerson0.isSessionCompatibleSessionCount += 1

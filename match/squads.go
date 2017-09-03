@@ -1,5 +1,10 @@
 package match
 
+import (
+	"sort"
+	"math/rand"
+)
+
 func generateSquads(people []*Person, busyTimes []*BusyTime) []*Squad {
 	masters := filterPersons(people, true)
 	disciples := filterPersons(people, false)
@@ -22,7 +27,30 @@ func generateSquads(people []*Person, busyTimes []*BusyTime) []*Squad {
 		}
 	}
 
+	for i := range squads {
+		j := rand.Intn(i + 1)
+		squads[i], squads[j] = squads[j], squads[i]
+	}
+
+	sort.Sort(byExclusivity(squads))
+
 	return squads
+}
+
+type byExclusivity []*Squad
+
+func (a byExclusivity) Len() int      { return len(a) }
+func (a byExclusivity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byExclusivity) Less(i, j int) bool {
+	iExclusivity := a[i].GetExclusivity()
+	jExclusivity := a[j].GetExclusivity()
+	switch iExclusivity {
+	case ExclusivityMobile:
+		return jExclusivity != ExclusivityMobile
+	case ExclusivityBack:
+		return jExclusivity == ExclusivityNone
+	}
+	return false
 }
 
 func filterPersons(persons []*Person, wantedIsGoodReviewer bool) []*Person {

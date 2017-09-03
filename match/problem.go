@@ -1,7 +1,6 @@
 package match
 
 import (
-	"time"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 )
@@ -72,11 +71,6 @@ func LoadPersons(path string) ([]*Person, error) {
 	yaml.Unmarshal(data, &persons)
 
 	return persons, nil
-}
-
-type Range struct {
-	Start time.Time
-	End   time.Time
 }
 
 type BusyTime struct {

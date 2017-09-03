@@ -11,11 +11,37 @@ import (
 	"path/filepath"
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
+	"io/ioutil"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/calendar/v3"
 )
+
+func GetGoogleCalendarService() (*calendar.Service, error) {
+	ctx := context.Background()
+
+	b, err := ioutil.ReadFile("client_secret.json")
+	if err != nil {
+		return nil, err
+	}
+
+	config, err := google.ConfigFromJSON(b, calendar.CalendarScope)
+	if err != nil {
+		return nil, err
+	}
+
+	client := GetHttpClient(ctx, config)
+
+	srv, err := calendar.New(client)
+	if err != nil {
+		return nil, err
+	}
+
+	return srv, nil
+}
 
 // getClient uses a Context and Config to retrieve a Token
 // then generate a Client. It returns the generated Client.
-func GetClient(ctx context.Context, config *oauth2.Config) *http.Client {
+func GetHttpClient(ctx context.Context, config *oauth2.Config) *http.Client {
 	cacheFile, err := tokenCacheFile()
 	if err != nil {
 		log.Fatalf("Unable to get path to cached credential file. %v", err)

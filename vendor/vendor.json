@@ -214,6 +214,12 @@
 			"path": "google.golang.org/appengine/urlfetch",
 			"revision": "d9a072cfa7b9736e44311ef77b3e09d804bfa599",
 			"revisionTime": "2017-08-14T19:09:42Z"
+		},
+		{
+			"checksumSHA1": "RDJpJQwkF012L6m/2BJizyOksNw=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "eb3733d160e74a9c7e442f435eb3bea458e1d19f",
+			"revisionTime": "2017-08-12T16:00:11Z"
 		}
 	],
 	"rootPath": "github.com/transcovo/matchmaker"

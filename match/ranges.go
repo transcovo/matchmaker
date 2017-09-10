@@ -22,12 +22,6 @@ func (r *Range) Minutes() float64 {
 	return r.End.Sub(r.Start).Minutes()
 }
 
-var durations = []time.Duration{
-	150 * time.Minute,
-	120 * time.Minute,
-	90 * time.Minute,
-}
-
 func generateTimeRanges(workRanges []*Range) []*Range {
 	ranges := []*Range{}
 	for _, duration := range durations {

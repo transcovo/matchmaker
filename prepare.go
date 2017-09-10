@@ -101,8 +101,8 @@ func loadProblem() *match.Problem {
 				"end":   workRange.End,
 			}).Info("Loading busy detail on range")
 			result, err := cal.Freebusy.Query(&calendar.FreeBusyRequest{
-				TimeMin: formatTime(workRange.Start),
-				TimeMax: formatTime(workRange.End),
+				TimeMin: gcalendar.FormatTime(workRange.Start),
+				TimeMax: gcalendar.FormatTime(workRange.End),
 				Items: []*calendar.FreeBusyRequestItem{
 					{
 						Id: person.Email,

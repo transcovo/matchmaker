@@ -6,8 +6,11 @@ import (
 	"sort"
 	"github.com/transcovo/go-chpr-logger"
 	"github.com/sirupsen/logrus"
-	"math/rand"
 	"strings"
+	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type Solution struct {
@@ -68,6 +71,19 @@ func printSession(session *ReviewSession) {
 
 type solver func([]*ReviewSession, string) ([]*ReviewSession, map[Exclusivity]int)
 
+type partialSolution struct {
+	sessions []*ReviewSession
+	coverage map[Exclusivity]int
+}
+
+type byCoverage []*partialSolution
+
+func (a byCoverage) Len() int      { return len(a) }
+func (a byCoverage) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a byCoverage) Less(i, j int) bool {
+	return isMissingCoverageBetter(a[i].coverage, a[j].coverage)
+}
+
 func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 	var solve solver
 
@@ -79,27 +95,23 @@ func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 
 	var iterations int64 = 0
 
+	interrupted := false
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT)
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		interrupted = true
+		signal.Reset(syscall.SIGINT)
+	}()
+
 	solve = func(currentSessions []*ReviewSession, path string) ([]*ReviewSession, map[Exclusivity]int) {
-		currentCoveragePerformance, _ := getCoveragePerformance(currentSessions, workRanges, targetCoverage)
+		derivedSolutions := []*partialSolution{}
 
-		//for i, session := range allSessions {
-		maxIter := 5000 / (len(currentSessions) + 1)
-		for k := 0; k < maxIter; k++ {
-			if iterations > 10e7 {
+		for _, session := range allSessions {
+			if interrupted {
 				break
-			}
-
-			i := rand.Intn(len(allSessions))
-			session := allSessions[i]
-			iterations += 1
-
-			subPath := path + "/" + strconv.Itoa(i)
-			if iterations%10e4 == 0 {
-				logger.WithFields(logrus.Fields{
-					"iterations": iterations / 1000,
-					"best":       missingCoverageToString(bestCoveragePerformance),
-					"current":    missingCoverageToString(currentCoveragePerformance),
-				}).Info("Coverage comparision")
 			}
 
 			sessionCompatible := isSessionCompatible(session, currentSessions)
@@ -113,32 +125,43 @@ func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 				continue
 			}
 
-			improvesCoverage := isMissingCoverageBetter(newCoveragePerformance, currentCoveragePerformance)
-			if !improvesCoverage {
-				continue
+			derivedSolution := &partialSolution{
+				sessions: make([]*ReviewSession, len(newSessions)),
+				coverage: newCoveragePerformance,
 			}
+			copy(derivedSolution.sessions, newSessions)
+			derivedSolutions = append(derivedSolutions, derivedSolution)
+		}
 
-			currentCoveragePerformance = newCoveragePerformance
+		logger.WithFields(logrus.Fields{
+			"iterations": iterations,
+			"best":       missingCoverageToString(bestCoveragePerformance),
+			"path":       path,
+			"children":   len(derivedSolutions),
+		}).Info("Exploring children")
 
+		if len(derivedSolutions) > 0 {
+			sort.Sort(byCoverage(derivedSolutions))
+
+			newCoveragePerformance := derivedSolutions[0].coverage
 			if isMissingCoverageBetter(newCoveragePerformance, bestCoveragePerformance) {
+				newSessions := derivedSolutions[0].sessions
 				bestSessions = make([]*ReviewSession, len(newSessions))
 				copy(bestSessions, newSessions)
 				bestCoveragePerformance = newCoveragePerformance
 			}
 
-			if isEnough(currentCoveragePerformance) {
-				break
+			for i, derivedSolution := range derivedSolutions {
+				if interrupted || i >= maxWidthExploration || i > 0 && len(path) > maxExplorationPathLength {
+					break
+				}
+
+				iterations += 1
+
+				subPath := path + "/" + strconv.Itoa(i)
+
+				solve(derivedSolution.sessions, subPath)
 			}
-
-			solve(newSessions, subPath)
-		}
-
-		__debug_perf, _ := getCoveragePerformance(bestSessions, workRanges, targetCoverage)
-		if missingCoverageToString(__debug_perf) != missingCoverageToString(bestCoveragePerformance) {
-			printSessions(bestSessions)
-			println(missingCoverageToString(__debug_perf))
-			println(missingCoverageToString(bestCoveragePerformance))
-			panic("here")
 		}
 
 		return bestSessions, bestCoveragePerformance
@@ -201,7 +224,7 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 		otherPerson0 := otherPeople[0]
 		otherPerson1 := otherPeople[1]
 		if otherPerson0 == person0 || otherPerson0 == person1 || otherPerson1 == person0 || otherPerson1 == person1 {
-			range1 := session.Range.Pad(time.Hour * 3)
+			range1 := session.Range.Pad(minSessionSpacing)
 			range2 := otherSession.Range
 			if haveIntersection(range1, range2) {
 				return false
@@ -213,7 +236,8 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 	}
 
 	// max 4 reviews per person
-	return person0.isSessionCompatibleSessionCount < 4 && person1.isSessionCompatibleSessionCount < 4
+	return person0.isSessionCompatibleSessionCount < maxSessionsPerWeek &&
+		person1.isSessionCompatibleSessionCount < maxSessionsPerWeek
 }
 
 func printRanges(ranges []*Range) {

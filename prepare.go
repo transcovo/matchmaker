@@ -129,9 +129,9 @@ func loadProblem() *match.Problem {
 		WorkRanges:     workRanges,
 		BusyTimes:      busyTimes,
 		TargetCoverage: map[match.Exclusivity]int{
-			match.ExclusivityMobile: 1,
+			match.ExclusivityMobile: 0,
 			match.ExclusivityBack: 2,
-			match.ExclusivityNone: 3,
+			match.ExclusivityNone: 2,
 		},
 	}
 }

@@ -53,6 +53,7 @@ func (languages *Languages) GetExclusivity() Exclusivity {
 
 type Person struct {
 	Email                           string `yaml:"email"`
+	IsAnnoying						bool `yaml:"annoying"`
 	Languages                       Languages
 	IsGoodReviewer                  bool
 	isSessionCompatibleSessionCount int `yaml:"-"`

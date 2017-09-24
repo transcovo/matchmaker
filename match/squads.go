@@ -17,7 +17,8 @@ func generateSquads(people []*Person, busyTimes []*BusyTime) []*Squad {
 			languagesCompatible := masterExclusivity == ExclusivityNone ||
 				discipleExclusivity == ExclusivityNone ||
 				masterExclusivity == discipleExclusivity
-			if languagesCompatible {
+			characterCompatible := !(master.IsAnnoying && disciple.IsAnnoying)
+			if languagesCompatible && characterCompatible {
 				people := []*Person{master, disciple}
 				squads = append(squads, &Squad{
 					People:     people,

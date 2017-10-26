@@ -3,8 +3,8 @@ package match
 import "time"
 
 var durations = []time.Duration{
-	120 * time.Minute,
 	90 * time.Minute,
+	60 * time.Minute,
 }
 
 var minSessionSpacing = time.Hour * 4

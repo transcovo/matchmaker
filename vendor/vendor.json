@@ -3,27 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"path": "appengine",
-			"revision": ""
-		},
-		{
-			"path": "appengine_internal",
-			"revision": ""
-		},
-		{
-			"path": "appengine_internal/base",
-			"revision": ""
-		},
-		{
 			"checksumSHA1": "AH7jcN7pvaPDU6UjHdpT081DDGk=",
 			"path": "cloud.google.com/go/compute/metadata",
 			"revision": "2b74e2e25316cfd9e46b74e444cdeceb78786dc5",
 			"revisionTime": "2017-08-20T12:51:33Z"
-		},
-		{
-			"path": "git",
-			"revision": "github.com:transcovo/go-chpr-logger.git",
-			"version": "github.com:transcovo/go-chpr-logger.git"
 		},
 		{
 			"checksumSHA1": "94NefBZ4UTXLh9WOuqAdciK1Oew=",
@@ -222,5 +205,5 @@
 			"revisionTime": "2017-08-12T16:00:11Z"
 		}
 	],
-	"rootPath": "github.com/transcovo/matchmaker"
+	"rootPath": "github.com/rossille/matchmaker"
 }

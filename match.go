@@ -2,14 +2,14 @@ package main
 
 import (
 	"io/ioutil"
-	"github.com/transcovo/matchmaker/match"
-	"github.com/transcovo/matchmaker/util"
+	"github.com/rossille/matchmaker/match"
+	"github.com/rossille/matchmaker/util"
 	"flag"
 	"os"
 	"log"
 	"runtime/pprof"
 	"fmt"
-	"github.com/transcovo/matchmaker/gcalendar"
+	"github.com/rossille/matchmaker/gcalendar"
 	"google.golang.org/api/calendar/v3"
 	"github.com/transcovo/go-chpr-logger"
 )

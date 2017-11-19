@@ -4,12 +4,12 @@ import (
 	"google.golang.org/api/calendar/v3"
 	"github.com/transcovo/go-chpr-logger"
 	"time"
-	"github.com/transcovo/matchmaker/gcalendar"
-	"github.com/transcovo/matchmaker/match"
+	"github.com/rossille/matchmaker/gcalendar"
+	"github.com/rossille/matchmaker/match"
 	logrus2 "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
-	"github.com/transcovo/matchmaker/util"
+	"github.com/rossille/matchmaker/util"
 )
 
 func FirstDayOfISOWeek() time.Time {

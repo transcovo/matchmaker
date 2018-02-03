@@ -8,7 +8,6 @@ import (
 	"os"
 	"log"
 	"runtime/pprof"
-	"fmt"
 	"github.com/rossille/matchmaker/gcalendar"
 	"google.golang.org/api/calendar/v3"
 	"github.com/transcovo/go-chpr-logger"

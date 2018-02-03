@@ -21,6 +21,8 @@ func FirstDayOfISOWeek() time.Time {
 		date = date.Add(time.Hour)
 	}
 
+	date = date.AddDate(0, 0, 0)
+
 	return date
 }
 

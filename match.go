@@ -32,14 +32,10 @@ func main() {
 	problem, err := match.LoadProblem(yml)
 	solution := match.Solve(problem)
 
-	var response string
-
 	cal, err := gcalendar.GetGoogleCalendarService()
 	util.PanicOnError(err, "Can't get gcalendar client")
 
 	for _, session := range solution.Sessions {
-		fmt.Scanln(&response)
-
 		attendees := []*calendar.EventAttendee{}
 
 		for _, person := range session.Reviewers.People {

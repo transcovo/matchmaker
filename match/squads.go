@@ -19,6 +19,18 @@ func generateSquads(people []*Person, busyTimes []*BusyTime) []*Squad {
 		}
 	}
 
+	for masterIndex1, master1 := range masters {
+		for masterIndex2, master2 := range masters {
+			if masterIndex1 < masterIndex2 {
+				people := []*Person{master1, master2}
+				squads = append(squads, &Squad{
+					People:     people,
+					BusyRanges: mergeBusyRanges(busyTimes, people),
+				})
+			}
+		}
+	}
+
 	for i := range squads {
 		j := rand.Intn(i + 1)
 		squads[i], squads[j] = squads[j], squads[i]

@@ -130,11 +130,7 @@ func loadProblem() *match.Problem {
 		People:         people,
 		WorkRanges:     workRanges,
 		BusyTimes:      busyTimes,
-		TargetCoverage: map[match.Exclusivity]int{
-			match.ExclusivityMobile: 0,
-			match.ExclusivityBack: 2,
-			match.ExclusivityNone: 2,
-		},
+		TargetCoverage: 2,
 	}
 }
 
@@ -142,49 +138,4 @@ func main() {
 	problem := loadProblem()
 	yml, _ := problem.ToYaml()
 	ioutil.WriteFile("./problem.yml", yml, os.FileMode(0644))
-
-	/*
-	cal, err := gcalendar.GetGoogleCalendarService()
-	panicOnError(err, "Can't get gcalendar client")
-
-	event, err := cal.Events.Insert("chauffeur-prive.com_k23ttdrv7g0l5i2vjj1f3s8voc@group.calendar.google.com", &calendar.Event{
-		Start: &calendar.EventDateTime{
-			DateTime: time.Now().Format(time.RFC3339),
-		},
-		End: &calendar.EventDateTime{
-			DateTime: time.Now().Add(time.Hour).Format(time.RFC3339),
-		},
-		Summary: "Test API",
-		Attendees: []*calendar.EventAttendee{
-			{
-				Email: "samuel@chauffeur-prive.com",
-			},
-		},
-	}).Do()
-	panicOnError(err, "Can't create event")
-
-	fmt.Printf("Event created: %s\n", event.Summary)
-
-
-	t := time.Now().Format(time.RFC3339)
-	events, err := srv.Events.List("samuel.rossille@gmail.com").ShowDeleted(false).
-		SingleEvents(true).TimeMin(t).MaxResults(10).OrderBy("startTime").Do()
-	panicOnError(err, "Can't events")
-
-	fmt.Println("Upcoming events:")
-	if len(events.Items) > 0 {
-		for _, i := range events.Items {
-			var when string
-			// If the DateTime is an empty string the Event is an all-day Event.
-			// So only Date is available.
-			if i.Start.DateTime != "" {
-				when = i.Start.DateTime
-			} else {
-				when = i.Start.Date
-			}
-			fmt.Printf("  - %s (%s)\n", i.Summary, when)
-		}
-	} else {
-		fmt.Printf("No upcoming events found.\n")
-	}*/
 }

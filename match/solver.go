@@ -45,11 +45,9 @@ func Solve(problem *Problem) *Solution {
 
 	printSessions(solution.Sessions)
 
-	for exclusivity, exclusivityCoverage := range coverage {
-		println(exclusivity.String() + ":")
-		for i, value := range exclusivityCoverage {
-			println("  " + strconv.Itoa(i) + " -> " + strconv.Itoa(value))
-		}
+	println("Coverage:")
+	for i, value := range coverage {
+		println("  " + strconv.Itoa(i) + " -> " + strconv.Itoa(value))
 	}
 
 	return solution
@@ -69,11 +67,11 @@ func printSession(session *ReviewSession) {
 		session.Range.End.Format(time.Stamp) + "\t")
 }
 
-type solver func([]*ReviewSession, string) ([]*ReviewSession, map[Exclusivity]int)
+type solver func([]*ReviewSession, string) ([]*ReviewSession, int)
 
 type partialSolution struct {
 	sessions []*ReviewSession
-	coverage map[Exclusivity]int
+	coverage int
 }
 
 type byCoverage []*partialSolution
@@ -106,7 +104,7 @@ func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 		signal.Reset(syscall.SIGINT)
 	}()
 
-	solve = func(currentSessions []*ReviewSession, path string) ([]*ReviewSession, map[Exclusivity]int) {
+	solve = func(currentSessions []*ReviewSession, path string) ([]*ReviewSession, int) {
 		derivedSolutions := []*partialSolution{}
 
 		for _, session := range allSessions {
@@ -169,32 +167,12 @@ func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 	return solve;
 }
 
-func missingCoverageToString(missingCoverage map[Exclusivity]int) string {
-	return "[" + strconv.Itoa(missingCoverage[ExclusivityMobile]) + "/" +
-		strconv.Itoa(missingCoverage[ExclusivityBack]) + "//" +
-		strconv.Itoa(missingCoverage[ExclusivityNone]) + "]"
+func missingCoverageToString(missingCoverage int) string {
+	return "[" + strconv.Itoa(missingCoverage) + "]"
 }
 
-func isMissingCoverageBetter2(coverage1 map[Exclusivity]int, coverage2 map[Exclusivity]int) bool {
-	return coverage1[ExclusivityNone] < coverage2[ExclusivityNone]
-}
-
-func isMissingCoverageBetter(coverage1 map[Exclusivity]int, coverage2 map[Exclusivity]int) bool {
-	return coverage1[ExclusivityNone] <= coverage2[ExclusivityNone] &&
-		coverage1[ExclusivityBack] <= coverage2[ExclusivityBack] &&
-		coverage1[ExclusivityMobile] <= coverage2[ExclusivityMobile] && (
-		coverage1[ExclusivityNone] < coverage2[ExclusivityNone] ||
-			coverage1[ExclusivityBack] < coverage2[ExclusivityBack] ||
-			coverage1[ExclusivityMobile] < coverage2[ExclusivityMobile])
-}
-
-func isEnough(missingCoverage map[Exclusivity]int) bool {
-	for _, missing := range missingCoverage {
-		if missing > 0 {
-			return false
-		}
-	}
-	return true
+func isMissingCoverageBetter(coverage1 int, coverage2 int) bool {
+	return coverage1 <= coverage2
 }
 
 func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool {
@@ -248,8 +226,7 @@ func printRanges(ranges []*Range) {
 
 func printSquads(squads []*Squad) {
 	for _, squad := range squads {
-		exclusivityStr := squad.GetExclusivity().String()
-		println(squad.People[0].Email + " + " + squad.People[1].Email + ": " + exclusivityStr)
+		println(squad.People[0].Email + " + " + squad.People[1].Email)
 	}
 }
 
@@ -275,16 +252,6 @@ func getNameFromEmail(email string) string {
 	return strings.Title(firstName)
 }
 
-func (squad *Squad) GetExclusivity() Exclusivity {
-	for _, person := range squad.People {
-		exclusivity := person.GetExclusivity()
-		if exclusivity != ExclusivityNone {
-			return exclusivity
-		}
-	}
-	return ExclusivityNone
-}
-
 type Score struct {
 	Hours    int
 	Coverage float32
@@ -292,43 +259,30 @@ type Score struct {
 
 var coveragePeriodSpan = 30 * time.Minute
 
-func getCoveragePerformance(sessions []*ReviewSession, workRanges []*Range, target map[Exclusivity]int) (map[Exclusivity]int, int) {
+func getCoveragePerformance(sessions []*ReviewSession, workRanges []*Range, target int) (int, int) {
 	coverage, maxCoverage := getCoverage(workRanges, sessions)
 
 	missingCoverage := getMissingConverage(coverage, target)
 
 	return missingCoverage, maxCoverage
 }
-func getMissingConverage(coverage map[Exclusivity]map[int]int, target map[Exclusivity]int) map[Exclusivity]int {
-	missingCoverage := map[Exclusivity]int{
-		ExclusivityMobile: 0,
-		ExclusivityBack:   0,
-		ExclusivityNone:   0,
-	}
-	for exclusivity, exclusivityCoverage := range coverage {
-		targetValue := target[exclusivity]
-		for _, value := range exclusivityCoverage {
-			if value < targetValue {
-				missingCoverage[exclusivity] += targetValue - value
-			}
+func getMissingConverage(exclusivityCoverage map[int]int, targetValue int) int {
+	missingCoverage := 0
+	for _, value := range exclusivityCoverage {
+		if value < targetValue {
+			missingCoverage += targetValue - value
 		}
 	}
 	return missingCoverage
 }
 
-func getCoverage(workRanges []*Range, sessions []*ReviewSession) (map[Exclusivity]map[int]int, int) {
-	coverage := map[Exclusivity]map[int]int{
-		ExclusivityMobile: {},
-		ExclusivityBack:   {},
-		ExclusivityNone:   {},
-	}
+func getCoverage(workRanges []*Range, sessions []*ReviewSession) (map[int]int, int) {
+	coverage := map[int]int{}
 	for _, workRange := range workRanges {
 		date := workRange.Start
 		for date.Before(workRange.End) {
 			coveragePeriodId := getCoveragePeriodId(workRanges, date)
-			coverage[ExclusivityMobile][coveragePeriodId] = 0
-			coverage[ExclusivityBack][coveragePeriodId] = 0
-			coverage[ExclusivityNone][coveragePeriodId] = 0
+			coverage[coveragePeriodId] = 0
 			date = date.Add(coveragePeriodSpan)
 		}
 	}
@@ -337,18 +291,9 @@ func getCoverage(workRanges []*Range, sessions []*ReviewSession) (map[Exclusivit
 		date := session.Start()
 		for date.Before(session.End()) {
 			coveragePeriodId := getCoveragePeriodId(workRanges, date)
-			switch session.Reviewers.GetExclusivity() {
-			case ExclusivityMobile:
-				coverage[ExclusivityMobile][coveragePeriodId] += 1
-			case ExclusivityBack:
-				coverage[ExclusivityBack][coveragePeriodId] += 1
-			case ExclusivityNone:
-				coverage[ExclusivityMobile][coveragePeriodId] += 1
-				coverage[ExclusivityBack][coveragePeriodId] += 1
-			}
-			coverage[ExclusivityNone][coveragePeriodId] += 1
-			if coverage[ExclusivityNone][coveragePeriodId] > maxCoverage {
-				maxCoverage = coverage[ExclusivityNone][coveragePeriodId]
+			coverage[coveragePeriodId] += 1
+			if coverage[coveragePeriodId] > maxCoverage {
+				maxCoverage = coverage[coveragePeriodId]
 			}
 			date = date.Add(coveragePeriodSpan)
 		}

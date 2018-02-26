@@ -1,7 +1,6 @@
 package match
 
 import (
-	"sort"
 	"math/rand"
 )
 
@@ -12,19 +11,11 @@ func generateSquads(people []*Person, busyTimes []*BusyTime) []*Squad {
 	squads := []*Squad{}
 	for _, master := range masters {
 		for _, disciple := range disciples {
-			masterExclusivity := master.GetExclusivity()
-			discipleExclusivity := disciple.GetExclusivity()
-			languagesCompatible := masterExclusivity == ExclusivityNone ||
-				discipleExclusivity == ExclusivityNone ||
-				masterExclusivity == discipleExclusivity
-			characterCompatible := !(master.IsAnnoying && disciple.IsAnnoying)
-			if languagesCompatible && characterCompatible {
-				people := []*Person{master, disciple}
-				squads = append(squads, &Squad{
-					People:     people,
-					BusyRanges: mergeBusyRanges(busyTimes, people),
-				})
-			}
+			people := []*Person{master, disciple}
+			squads = append(squads, &Squad{
+				People:     people,
+				BusyRanges: mergeBusyRanges(busyTimes, people),
+			})
 		}
 	}
 
@@ -33,25 +24,7 @@ func generateSquads(people []*Person, busyTimes []*BusyTime) []*Squad {
 		squads[i], squads[j] = squads[j], squads[i]
 	}
 
-	sort.Sort(byExclusivity(squads))
-
 	return squads
-}
-
-type byExclusivity []*Squad
-
-func (a byExclusivity) Len() int      { return len(a) }
-func (a byExclusivity) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a byExclusivity) Less(i, j int) bool {
-	iExclusivity := a[i].GetExclusivity()
-	jExclusivity := a[j].GetExclusivity()
-	switch iExclusivity {
-	case ExclusivityMobile:
-		return jExclusivity != ExclusivityMobile
-	case ExclusivityBack:
-		return jExclusivity == ExclusivityNone
-	}
-	return false
 }
 
 func filterPersons(persons []*Person, wantedIsGoodReviewer bool) []*Person {

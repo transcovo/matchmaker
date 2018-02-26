@@ -5,62 +5,10 @@ import (
 	"io/ioutil"
 )
 
-type Level int
-
-const (
-	LanguageLevelNone       Level = iota
-	LanguageLevelApprentice
-	LanguageLevelMaster
-)
-
-type Exclusivity int
-
-func (exclusivity Exclusivity) String() string {
-	switch exclusivity {
-	case ExclusivityNone:
-		return "none"
-	case ExclusivityBack:
-		return "back"
-	case ExclusivityMobile:
-		return "mobile"
-	}
-	panic("Unexpected exclusivity " + string(exclusivity))
-}
-
-const (
-	ExclusivityNone   Exclusivity = iota
-	ExclusivityMobile
-	ExclusivityBack
-)
-
-type Languages struct {
-	Js      Level
-	Go      Level
-	Python  Level
-	Ios     Level
-	Android Level
-}
-
-func (languages *Languages) GetExclusivity() Exclusivity {
-	if languages.Js == LanguageLevelNone && languages.Go == LanguageLevelNone && languages.Python == LanguageLevelNone {
-		return ExclusivityMobile
-	}
-	if languages.Ios == LanguageLevelNone && languages.Android == LanguageLevelNone {
-		return ExclusivityBack
-	}
-	return ExclusivityNone
-}
-
 type Person struct {
 	Email                           string `yaml:"email"`
-	IsAnnoying						bool `yaml:"annoying"`
-	Languages                       Languages
 	IsGoodReviewer                  bool
 	isSessionCompatibleSessionCount int `yaml:"-"`
-}
-
-func (person *Person) GetExclusivity() Exclusivity {
-	return person.Languages.GetExclusivity()
 }
 
 func LoadPersons(path string) ([]*Person, error) {
@@ -84,7 +32,7 @@ type Problem struct {
 	People           []*Person
 	WorkRanges       []*Range
 	BusyTimes        []*BusyTime
-	TargetCoverage   map[Exclusivity]int
+	TargetCoverage   int
 	MaxTotalCoverage int
 }
 
@@ -97,7 +45,7 @@ type SerializedProblem struct {
 	People         []*Person
 	WorkRanges     []*Range
 	BusyTimes      []*SerializedBusyTime
-	TargetCoverage map[Exclusivity]int
+	TargetCoverage int
 }
 
 func (problem *Problem) ToYaml() ([]byte, error) {

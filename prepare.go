@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	logrus2 "github.com/sirupsen/logrus"
 	"github.com/transcovo/go-chpr-logger"
 	"github.com/transcovo/matchmaker/gcalendar"
@@ -9,7 +10,6 @@ import (
 	"google.golang.org/api/calendar/v3"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -114,7 +114,7 @@ func loadProblem(weekShift int) *match.Problem {
 					},
 				},
 			}).Do()
-			util.PanicOnError(err, "Can't retrieve ve free/busy data for "+person.Email)
+			util.PanicOnError(err, "Can't retrieve free/busy data for "+person.Email)
 			busyTimePeriods := result.Calendars[person.Email].Busy
 			println(person.Email + ":")
 			for _, busyTimePeriod := range busyTimePeriods {
@@ -137,21 +137,14 @@ func loadProblem(weekShift int) *match.Problem {
 	}
 }
 
-// One parameter 'weekShift' can be provided to plan for an upcoming week instead of next week
+// One flag 'week-shift' can be set to plan for an upcoming week instead of next week
 // Default = 0 (planning for next week)
 // 1 = in two weeks, 2 = in 3 weeks, etc.
 func main() {
-	weekShift := ""
-	if len(os.Args) > 1 {
-		weekShift = os.Args[1]
-	}
-	if weekShift == "" {
-		weekShift = "0"
-	}
-	weekShiftInt, err := strconv.Atoi(weekShift)
-	util.PanicOnError(err, "Invalid value for weekShift parameter, must be integer value")
+	weekShiftPtr := flag.Int("week-shift", 0, "Week shift")
+	flag.Parse()
 
-	problem := loadProblem(weekShiftInt)
+	problem := loadProblem(*weekShiftPtr)
 	yml, _ := problem.ToYaml()
 	ioutil.WriteFile("./problem.yml", yml, os.FileMode(0644))
 }

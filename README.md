@@ -13,7 +13,7 @@ Those files need to be placed at the root of the project.
 
 ## Preparing
 
-    go run prepare.go <week shift [default=0]>
+    go run prepare.go [-week-shift value [default=0]]
 
 This script will compute work ranges for the target week, and check free slots for each potential
 reviewer and create an output file `problem.yml`.

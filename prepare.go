@@ -1,20 +1,22 @@
 package main
 
 import (
-	"google.golang.org/api/calendar/v3"
-	"github.com/transcovo/go-chpr-logger"
-	"time"
-	"github.com/rossille/matchmaker/gcalendar"
-	"github.com/rossille/matchmaker/match"
+	"flag"
 	logrus2 "github.com/sirupsen/logrus"
+	"github.com/transcovo/go-chpr-logger"
+	"github.com/transcovo/matchmaker/gcalendar"
+	"github.com/transcovo/matchmaker/match"
+	"github.com/transcovo/matchmaker/util"
+	"google.golang.org/api/calendar/v3"
 	"io/ioutil"
 	"os"
-	"github.com/rossille/matchmaker/util"
+	"time"
 )
 
-func FirstDayOfISOWeek() time.Time {
+func FirstDayOfISOWeek(weekShift int) time.Time {
 	date := time.Now()
 	date = time.Date(date.Year(), date.Month(), date.Day(), date.Hour(), 0, 0, 0, date.Location())
+	date = date.AddDate(0, 0, 7*weekShift)
 
 	// iterate to Monday
 	for !(date.Weekday() == time.Monday && date.Hour() == 0) {
@@ -57,9 +59,9 @@ func GetWeekWorkRanges(beginOfWeek time.Time) chan *match.Range {
 	ranges := make(chan *match.Range)
 
 	go func() {
-		for day := 0; day < 5; day ++ {
-			ranges <- GetWorkRange(beginOfWeek, day, 10, 0, 12, 30)
-			ranges <- GetWorkRange(beginOfWeek, day, 13, 30, 19, 0)
+		for day := 0; day < 5; day++ {
+			ranges <- GetWorkRange(beginOfWeek, day, 10, 0, 12, 0)
+			ranges <- GetWorkRange(beginOfWeek, day, 14, 0, 18, 30)
 		}
 		close(ranges)
 	}()
@@ -81,7 +83,7 @@ func ToSlice(c chan *match.Range) []*match.Range {
 	return s
 }
 
-func loadProblem() *match.Problem {
+func loadProblem(weekShift int) *match.Problem {
 	people, err := match.LoadPersons("./persons.yml")
 	util.PanicOnError(err, "Can't load people")
 	logger.WithField("count", len(people)).Info("People loaded")
@@ -90,7 +92,8 @@ func loadProblem() *match.Problem {
 	util.PanicOnError(err, "Can't get gcalendar client")
 	logger.Info("Connected to google calendar")
 
-	beginOfWeek := FirstDayOfISOWeek()
+	beginOfWeek := FirstDayOfISOWeek(weekShift)
+	logger.WithField("weekFirstDay", beginOfWeek).Info("Planning for week")
 
 	workRanges := ToSlice(GetWeekWorkRanges(beginOfWeek))
 	busyTimes := []*match.BusyTime{}
@@ -111,7 +114,7 @@ func loadProblem() *match.Problem {
 					},
 				},
 			}).Do()
-			util.PanicOnError(err, "Can't retrive free/busy data for "+person.Email)
+			util.PanicOnError(err, "Can't retrieve free/busy data for "+person.Email)
 			busyTimePeriods := result.Calendars[person.Email].Busy
 			println(person.Email + ":")
 			for _, busyTimePeriod := range busyTimePeriods {
@@ -134,8 +137,14 @@ func loadProblem() *match.Problem {
 	}
 }
 
+// One flag 'week-shift' can be set to plan for an upcoming week instead of next week
+// Default = 0 (planning for next week)
+// 1 = in two weeks, 2 = in 3 weeks, etc.
 func main() {
-	problem := loadProblem()
+	weekShiftPtr := flag.Int("week-shift", 0, "Week shift")
+	flag.Parse()
+
+	problem := loadProblem(*weekShiftPtr)
 	yml, _ := problem.ToYaml()
 	ioutil.WriteFile("./problem.yml", yml, os.FileMode(0644))
 }

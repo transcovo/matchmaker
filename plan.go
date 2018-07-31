@@ -48,7 +48,6 @@ func main() {
 			},
 			Summary: session.GetDisplayName(),
 			Attendees: attendees,
-			GuestsCanModify: true,
 		}).Do()
 		util.PanicOnError(err, "Can't create event")
 		logger.Info("✔ " + session.GetDisplayName())

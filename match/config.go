@@ -8,7 +8,7 @@ var durations = []time.Duration{
 
 var minSessionSpacing = time.Hour * 8
 
-var maxSessionsPerWeek = 3
+var maxSessionsPerWeek = 1
 
 var maxWidthExploration = 2
 

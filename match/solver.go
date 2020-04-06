@@ -164,7 +164,7 @@ func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 
 		return bestSessions, bestCoveragePerformance
 	}
-	return solve;
+	return solve
 }
 
 func missingCoverageToString(missingCoverage int) string {
@@ -213,9 +213,17 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 		otherPerson1.isSessionCompatibleSessionCount += 1
 	}
 
-	// max 4 reviews per person
-	return person0.isSessionCompatibleSessionCount < maxSessionsPerWeek &&
-		person1.isSessionCompatibleSessionCount < maxSessionsPerWeek
+	// check the max reviews per person
+  maxSessionsForPerson0 := defaultMaxSessionsPerWeek
+  maxSessionsForPerson1 := defaultMaxSessionsPerWeek
+  if person0.MaxSessionsPerWeek != 0 {
+		maxSessionsForPerson0 = person0.MaxSessionsPerWeek
+  }
+  if person1.MaxSessionsPerWeek != 0 {
+    maxSessionsForPerson1 = person1.MaxSessionsPerWeek
+  }
+  return person0.isSessionCompatibleSessionCount < maxSessionsForPerson0 &&
+    person1.isSessionCompatibleSessionCount < maxSessionsForPerson1
 }
 
 func printRanges(ranges []*Range) {

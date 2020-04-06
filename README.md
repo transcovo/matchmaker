@@ -5,9 +5,23 @@ Matchmaker takes care of matching and planning of reviewers and review slots in 
 ## Setup
 
 You need to retrieve the `persons.yml` file containing people configuration for review.
+Format example:
+```yaml
+- email: john.doe@kapten.com
+  isgoodreviewer: true
+- email: chuck.norris@kapten.com
+  isgoodreviewer: true
+  maxsessionsperweek: 1
+- email: james.bond@kapten.com
+- email: john.wick@kapten.com
+  maxsessionsperweek: 1
+- email: obi-wan.kenobi@kapten.com
+```
+**isgoodreviewer** is used to distinguish the experienced reviewers in order to create reviewer pairs that contain at least one experienced reviewer.
+**maxsessionsperweek** is optional, default is 3. If set to 0, it also falls back to the default value.
 
 You need to create/retrieve a `client_secret.json` file containing a valid Google Calendar
-access token for Chauffeur Privé's calendar.
+access token for Kapten's calendar.
 
 Those files need to be placed at the root of the project.
 

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"sort"
 	"github.com/transcovo/go-chpr-logger"
+	"github.com/transcovo/matchmaker/util"
 	"github.com/sirupsen/logrus"
 	"strings"
 	"fmt"
@@ -194,6 +195,11 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 		otherReviewers := otherSession.Reviewers
 		// not the same squad
 		if reviewers == otherReviewers {
+			return false
+		}
+
+		// not the same skills (if no skills specified, the reviewer can pair with any other reviewer)
+		if len(person0.Skills) != 0 && len(person1.Skills) != 0 && len(util.Intersection(person0.Skills, person1.Skills)) == 0 {
 			return false
 		}
 

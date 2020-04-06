@@ -9,9 +9,15 @@ Format example:
 ```yaml
 - email: john.doe@kapten.com
   isgoodreviewer: true
+  skills:
+    - frontend
+    - backend
 - email: chuck.norris@kapten.com
   isgoodreviewer: true
   maxsessionsperweek: 1
+  skills:
+    - frontend
+    - data
 - email: james.bond@kapten.com
 - email: john.wick@kapten.com
   maxsessionsperweek: 1
@@ -19,6 +25,7 @@ Format example:
 ```
 **isgoodreviewer** is used to distinguish the experienced reviewers in order to create reviewer pairs that contain at least one experienced reviewer.
 **maxsessionsperweek** is optional, default is 3. If set to 0, it also falls back to the default value.
+**skills** describes the areas of expertise of a reviewer in order to create pairs of people with same competences. If not specified the reviewer can be paired with any other reviewer (no matter the skills)
 
 You need to create/retrieve a `client_secret.json` file containing a valid Google Calendar
 access token for Kapten's calendar.

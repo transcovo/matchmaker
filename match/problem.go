@@ -6,10 +6,11 @@ import (
 )
 
 type Person struct {
-	Email                           string 	`yaml:"email"`
-	IsGoodReviewer                  bool		`yaml:"isgoodreviewer"`
-	MaxSessionsPerWeek              int			`yaml:"maxsessionsperweek"`
-	isSessionCompatibleSessionCount int 		`yaml:"-"`
+	Email                           string    `yaml:"email"`
+	IsGoodReviewer                  bool      `yaml:"isgoodreviewer"`
+	MaxSessionsPerWeek              int       `yaml:"maxsessionsperweek"`
+	Skills                          []string  `yaml:"skills"`
+	isSessionCompatibleSessionCount int       `yaml:"-"`
 }
 
 func LoadPersons(path string) ([]*Person, error) {

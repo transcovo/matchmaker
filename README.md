@@ -23,9 +23,9 @@ Format example:
   maxsessionsperweek: 1
 - email: obi-wan.kenobi@kapten.com
 ```
-**isgoodreviewer** is used to distinguish the experienced reviewers in order to create reviewer pairs that contain at least one experienced reviewer.
-**maxsessionsperweek** is optional, default is 3. If set to 0, it also falls back to the default value.
-**skills** describes the areas of expertise of a reviewer in order to create pairs of people with same competences. If not specified the reviewer can be paired with any other reviewer (no matter the skills)
+**isgoodreviewer** [optional] is used to distinguish the experienced reviewers in order to create reviewer pairs that contain at least one experienced reviewer. Default value is false.
+**maxsessionsperweek** [optional] sets a custom max sessions number per week for a reviewer. Default is 3. If set to 0, it also falls back to the default value.
+**skills** [optional] describes the areas of expertise of a reviewer in order to create pairs of people with same competences. If not specified the reviewer can be paired with any other reviewer (no matter the skills)
 
 You need to create/retrieve a `client_secret.json` file containing a valid Google Calendar
 access token for Kapten's calendar.

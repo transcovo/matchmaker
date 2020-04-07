@@ -198,7 +198,7 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 			return false
 		}
 
-		// not the same skills (if no skills specified, the reviewer can pair with any other reviewer)
+		// not the same skills (if no skills specified, the reviewer can be paired with any other reviewer)
 		if len(person0.Skills) != 0 && len(person1.Skills) != 0 && len(util.Intersection(person0.Skills, person1.Skills)) == 0 {
 			return false
 		}

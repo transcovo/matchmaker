@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"sort"
 	"github.com/transcovo/go-chpr-logger"
+	"github.com/transcovo/matchmaker/util"
 	"github.com/sirupsen/logrus"
 	"strings"
 	"fmt"
@@ -164,7 +165,7 @@ func getSolver(problem *Problem, allSessions []*ReviewSession) solver {
 
 		return bestSessions, bestCoveragePerformance
 	}
-	return solve;
+	return solve
 }
 
 func missingCoverageToString(missingCoverage int) string {
@@ -197,6 +198,11 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 			return false
 		}
 
+		// not the same skills (if no skills specified, the reviewer can be paired with any other reviewer)
+		if len(person0.Skills) != 0 && len(person1.Skills) != 0 && len(util.Intersection(person0.Skills, person1.Skills)) == 0 {
+			return false
+		}
+
 		otherPeople := otherReviewers.People
 
 		otherPerson0 := otherPeople[0]
@@ -213,9 +219,17 @@ func isSessionCompatible(session *ReviewSession, sessions []*ReviewSession) bool
 		otherPerson1.isSessionCompatibleSessionCount += 1
 	}
 
-	// max 4 reviews per person
-	return person0.isSessionCompatibleSessionCount < maxSessionsPerWeek &&
-		person1.isSessionCompatibleSessionCount < maxSessionsPerWeek
+	// check the max reviews per person
+  maxSessionsForPerson0 := defaultMaxSessionsPerWeek
+  maxSessionsForPerson1 := defaultMaxSessionsPerWeek
+  if person0.MaxSessionsPerWeek != 0 {
+		maxSessionsForPerson0 = person0.MaxSessionsPerWeek
+  }
+  if person1.MaxSessionsPerWeek != 0 {
+    maxSessionsForPerson1 = person1.MaxSessionsPerWeek
+  }
+  return person0.isSessionCompatibleSessionCount < maxSessionsForPerson0 &&
+    person1.isSessionCompatibleSessionCount < maxSessionsForPerson1
 }
 
 func printRanges(ranges []*Range) {

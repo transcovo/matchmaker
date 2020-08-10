@@ -39,15 +39,15 @@ func main() {
 			})
 		}
 
-		_, err := cal.Events.Insert("chauffeur-prive.com_k23ttdrv7g0l5i2vjj1f3s8voc@group.calendar.google.com", &calendar.Event{
+		_, err := cal.Events.Insert("c_ojs6r7ckus55ngnotltpsk2p0k@group.calendar.google.com", &calendar.Event{
 			Start: &calendar.EventDateTime{
 				DateTime: gcalendar.FormatTime(session.Range.Start),
 			},
 			End: &calendar.EventDateTime{
 				DateTime: gcalendar.FormatTime(session.Range.End),
 			},
-			Summary: session.GetDisplayName(),
-			Attendees: attendees,
+			Summary:         session.GetDisplayName(),
+			Attendees:       attendees,
 			GuestsCanModify: true,
 		}).Do()
 		util.PanicOnError(err, "Can't create event")
